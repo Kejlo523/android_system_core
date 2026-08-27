@@ -106,8 +106,18 @@ static bool sdcardfs_setup(const std::string& source_path, const std::string& de
     std::vector<std::string> new_opts_list;
     if (multi_user) new_opts_list.push_back("multiuser,");
     if (derive_gid) new_opts_list.push_back("derive_gid,");
-    if (default_normal) new_opts_list.push_back("default_normal,");
-    if (unshared_obb) new_opts_list.push_back("unshared_obb,");
+    /*
+     * The MT6757 4.4 sdcardfs driver predates default_normal and
+     * unshared_obb.  It rejects both options, but more importantly its failed
+     * mount path leaves the superblock security state corrupted.  Retrying
+     * the mount with fewer options then crashes in selinux_set_mnt_opts().
+     *
+     * Hinoki does not need either option: the legacy driver already applies
+     * the expected normal view and OBB sharing semantics.  Do not submit
+     * options which this kernel cannot parse.
+     */
+    (void)default_normal;
+    (void)unshared_obb;
     // Try several attempts, each time with one less option, to gracefully
     // handle older kernels that aren't updated yet.
     for (int i = 0; i <= new_opts_list.size(); ++i) {
