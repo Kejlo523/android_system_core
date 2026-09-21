@@ -41,8 +41,9 @@ init_cflags += \
 
 # --
 
-# Do not build this even with mmma if we're system-as-root, otherwise it will overwrite the symlink.
-ifneq ($(BOARD_BUILD_SYSTEM_ROOT_IMAGE),true)
+# SAR normally has no boot ramdisk. Boards opting into a separate first-stage
+# ramdisk keep /init in system as a symlink and install this binary in ramdisk/.
+ifneq ($(BOARD_BUILD_SYSTEM_ROOT_IMAGE)$(filter true,$(BOARD_BOOT_RAMDISK_WITH_SYSTEM_ROOT)),true)
 include $(CLEAR_VARS)
 LOCAL_CPPFLAGS := $(init_cflags)
 LOCAL_SRC_FILES := \
@@ -127,7 +128,7 @@ include $(BUILD_PHONY_PACKAGE)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := init_vendor
-ifneq ($(BOARD_BUILD_SYSTEM_ROOT_IMAGE),true)
+ifneq ($(BOARD_BUILD_SYSTEM_ROOT_IMAGE)$(filter true,$(BOARD_BOOT_RAMDISK_WITH_SYSTEM_ROOT)),true)
 LOCAL_REQUIRED_MODULES := \
    init_first_stage \
 
