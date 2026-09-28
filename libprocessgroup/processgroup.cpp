@@ -744,6 +744,14 @@ int createProcessGroup(uid_t uid, pid_t initialPid, bool memControl) {
         return -EINVAL;
     }
 
+    // Some legacy kernels expose neither the cgroup v1 hierarchy nor a usable
+    // cgroup v2 mount.  Treat process-group setup as optional in that case;
+    // callers such as Zygote cannot otherwise start system_server at all.
+    if (!CgroupsAvailable()) {
+        LOG(WARNING) << __func__ << ": cgroups unavailable, skipping process group setup";
+        return 0;
+    }
+
     if (memControl && !UsePerAppMemcg()) {
         LOG(ERROR) << "service memory controls are used without per-process memory cgroup support";
         return -EINVAL;

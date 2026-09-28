@@ -34,11 +34,28 @@
 #include <cutils/properties.h>
 #include <cutils/sockets.h>
 #include <fscrypt/fscrypt.h>
+#include <keyutils.h>
 #include <logwrap/logwrap.h>
 
 #define TAG "fscrypt"
 
 using namespace android::fscrypt;
+
+bool FscryptInstallKeyring() {
+    if (keyctl_search(KEY_SPEC_SESSION_KEYRING, "keyring", "fscrypt", 0) != -1) {
+        LOG(INFO) << "Fscrypt keyring is already created";
+        return true;
+    }
+    key_serial_t device_keyring = add_key("keyring", "fscrypt", nullptr, 0,
+                                          KEY_SPEC_SESSION_KEYRING);
+    if (device_keyring == -1) {
+        PLOG(ERROR) << "Failed to create fscrypt keyring";
+        return false;
+    }
+    LOG(INFO) << "Fscrypt keyring created with id " << device_keyring
+              << " in process " << getpid();
+    return true;
+}
 
 // TODO(b/139378601): use a single central implementation of this.
 static void delete_dir_contents(const std::string& dir) {
